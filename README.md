@@ -1,111 +1,89 @@
 # Smart Bookmark App
 
-Fullstack & GenAI Micro-Challenge Submission – Abstrabit Technologies Pvt Ltd
+Fullstack & GenAI Micro-Challenge Submission -- Abstrabit Technologies
+Pvt Ltd
 
----
+------------------------------------------------------------------------
 
 ## Live Demo
 
-**Vercel URL:**
-https://your-vercel-url.vercel.app
+**Vercel URL:**\
+https://smart-bookmarks-omega.vercel.app
 
-**GitHub Repository:**
+**GitHub Repository:**\
 https://github.com/sharmaHarshit2000/smart-bookmarks
 
----
+------------------------------------------------------------------------
 
 ## Overview
 
-Smart Bookmark App is a secure, real-time bookmark manager built using Next.js (App Router), Supabase, and Tailwind CSS.
+Smart Bookmark App is a secure, real-time bookmark manager built using
+Next.js (App Router), Supabase, and Tailwind CSS.
 
-Users can authenticate using Google OAuth and manage their private bookmarks with real-time synchronization across tabs and devices.
+Users can authenticate using Google OAuth and manage their private
+bookmarks with real-time synchronization across tabs and devices.
 
-Each user’s bookmarks are completely private and protected using Supabase Row Level Security (RLS).
+Each user's bookmarks are completely private and protected using
+Supabase Row Level Security (RLS).
 
----
+------------------------------------------------------------------------
 
 ## Features
 
 ### Authentication
 
-* Google OAuth login via Supabase Auth
-* Secure session handling using HTTP-only cookies
-* Protected routes using Next.js middleware
+-   Google OAuth login via Supabase Auth\
+-   Secure session handling using HTTP-only cookies\
+-   Protected routes using Next.js middleware
 
 ### Bookmark Management
 
-* Add bookmarks (Title + URL)
-* Delete bookmarks
-* Bookmarks stored securely per user
-* Automatic URL normalization
+-   Add bookmarks (Title + URL)\
+-   Delete bookmarks\
+-   Automatic URL normalization\
+-   Private per-user storage
 
 ### Privacy & Security
 
-* Row Level Security (RLS) enabled
-* Users can only access their own bookmarks
-* No cross-user data access possible
+-   Row Level Security (RLS) enabled\
+-   Strict user isolation\
+-   Server-side session validation
 
 ### Real-Time Updates
 
-* Instant sync across tabs
-* Uses Supabase Realtime subscriptions
-* No page refresh required
+-   Instant sync across tabs and devices\
+-   Uses Supabase Realtime subscriptions\
+-   No page refresh required
 
-### Deployment
-
-* Fully deployed on Vercel
-* Production-ready configuration
-* Works with external Google accounts
-
----
+------------------------------------------------------------------------
 
 ## Tech Stack
 
-Frontend
+**Frontend** - Next.js 14 (App Router) - React - Tailwind CSS
 
-* Next.js 14 (App Router)
-* React
-* Tailwind CSS
+**Backend** - Supabase - Authentication (Google OAuth) - PostgreSQL
+Database - Realtime subscriptions - Row Level Security
 
-Backend
+**Deployment** - Vercel
 
-* Supabase
-
-  * Authentication (Google OAuth)
-  * PostgreSQL Database
-  * Realtime subscriptions
-  * Row Level Security
-
-Deployment
-
-* Vercel
-
----
+------------------------------------------------------------------------
 
 ## Architecture Overview
 
-Client Layer
+**Client Layer** - Next.js Client Components - Supabase Browser Client -
+Realtime subscriptions
 
-* Next.js Client Components
-* Supabase Browser Client
-* Realtime subscriptions
+**Server Layer** - Next.js Server Components - Supabase Server Client -
+Middleware authentication protection
 
-Server Layer
+**Database Layer** - Supabase PostgreSQL - RLS policies for strict
+isolation
 
-* Next.js Server Components
-* Supabase Server Client
-* Middleware for authentication protection
-
-Database Layer
-
-* Supabase PostgreSQL
-* RLS policies for data isolation
-
----
+------------------------------------------------------------------------
 
 ## Database Schema
 
-```sql
+``` sql
 create table public.bookmarks (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
@@ -115,175 +93,133 @@ create table public.bookmarks (
 );
 ```
 
----
+------------------------------------------------------------------------
 
 ## Row Level Security Policies
 
-Ensures strict user isolation:
+``` sql
+alter table public.bookmarks enable row level security;
 
-* Users can only SELECT their bookmarks
-* Users can only INSERT their bookmarks
-* Users can only DELETE their bookmarks
+create policy "Bookmarks readable by owner"
+on public.bookmarks
+for select
+to authenticated
+using (auth.uid() = user_id);
 
----
+create policy "Bookmarks insertable by owner"
+on public.bookmarks
+for insert
+to authenticated
+with check (auth.uid() = user_id);
+
+create policy "Bookmarks deletable by owner"
+on public.bookmarks
+for delete
+to authenticated
+using (auth.uid() = user_id);
+```
+
+------------------------------------------------------------------------
 
 ## Real-Time Implementation
 
-Realtime updates are implemented using Supabase subscriptions:
-
-```ts
+``` ts
 supabase.channel("bookmarks")
-.on("postgres_changes", {...})
+.on("postgres_changes", {
+  event: "*",
+  schema: "public",
+  table: "bookmarks",
+  filter: `user_id=eq.${user.id}`,
+}, callback)
 .subscribe()
 ```
 
-This ensures:
+------------------------------------------------------------------------
 
-* Instant updates
-* Cross-tab synchronization
-* No manual refresh required
+## Environment Variables
 
----
+Required variables:
 
-## Problems Faced and Solutions
+    NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+    NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 
-### Problem 1: Supabase session handling with Next.js App Router
+Configure these in Vercel Project Settings.
 
-Issue:
-Managing authentication session correctly between server and client.
-
-Solution:
-Used Supabase SSR client with Next.js cookies API to persist sessions securely.
-
----
-
-### Problem 2: Real-time updates not triggering
-
-Issue:
-Realtime events were not firing due to incorrect subscription filtering.
-
-Solution:
-Added proper user_id filter and ensured correct channel cleanup and re-subscription.
-
----
-
-### Problem 3: Ensuring strict privacy between users
-
-Issue:
-Without proper policies, users could potentially access other users’ bookmarks.
-
-Solution:
-Implemented Supabase Row Level Security policies using auth.uid() matching.
-
----
-
-### Problem 4: Authentication protection on routes
-
-Issue:
-Unauthenticated users could access protected pages.
-
-Solution:
-Implemented Next.js middleware to protect routes and redirect unauthenticated users.
-
----
-
-## Security Considerations
-
-* Secure HTTP-only cookies
-* Supabase RLS enforcement
-* OAuth authentication
-* Server-side session validation
-
----
+------------------------------------------------------------------------
 
 ## How to Run Locally
 
 Clone repository:
 
-```bash
+``` bash
 git clone https://github.com/sharmaHarshit2000/smart-bookmarks
 cd smart-bookmarks
 ```
 
 Install dependencies:
 
-```bash
+``` bash
 npm install
 ```
 
-Create `.env.local`
+Create `.env.local`:
 
-```env
+``` env
 NEXT_PUBLIC_SUPABASE_URL=your_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_key
 ```
 
 Run:
 
-```bash
+``` bash
 npm run dev
 ```
 
----
+------------------------------------------------------------------------
+
+## Problems Faced and Solutions
+
+**Problem:** Supabase session handling with Next.js App Router\
+**Solution:** Used Supabase SSR client with cookies API.
+
+**Problem:** Real-time updates not triggering\
+**Solution:** Implemented proper channel filtering and cleanup.
+
+**Problem:** Ensuring strict privacy\
+**Solution:** Implemented Row Level Security policies.
+
+**Problem:** Protecting routes\
+**Solution:** Used Next.js middleware authentication guard.
+
+------------------------------------------------------------------------
+
+## Production Architecture
+
+User → Vercel (Next.js + Middleware)\
+→ Supabase Auth (Google OAuth)\
+→ Supabase PostgreSQL (RLS-secured database)\
+→ Supabase Realtime (live updates)
+
+------------------------------------------------------------------------
 
 ## AI Tools Used
 
-Yes, AI tools were used responsibly to improve productivity and code quality.
+-   ChatGPT -- architecture guidance, debugging, best practices\
+-   Supabase Documentation -- authentication and realtime reference
 
-Tools used:
+AI was used responsibly as an assistant.
 
-* ChatGPT – architecture guidance, debugging, best practices
-* Supabase Docs – authentication and realtime reference
+------------------------------------------------------------------------
 
-AI was used as an assistant, while all implementation, integration, and debugging were performed manually.
+## Contact
 
----
-
-## Hardest Part of the Challenge
-
-The most challenging part was implementing secure authentication with Supabase using Next.js App Router while maintaining proper session handling between client, server components, and middleware.
-
-Ensuring real-time updates worked reliably alongside strict Row Level Security was also technically complex.
-
----
-
-## Requirements Checklist
-
-| Requirement                | Status    |
-| -------------------------- | --------- |
-| Google OAuth Login         | Completed |
-| Private bookmarks per user | Completed |
-| Add bookmark               | Completed |
-| Delete bookmark            | Completed |
-| Real-time updates          | Completed |
-| Vercel deployment          | Completed |
-| Secure authentication      | Completed |
-
----
-
-## Deployment
-
-Production deployment using Vercel:
-
-* Environment variables configured
-* Supabase connected
-* OAuth redirect configured
-
----
-
-## Contact Information
-
-Full Name: Harshit Sharma
-Email: [harshitsharma9989@gmail.com](mailto:harshitsharma9989@gmail.com)
-Contact Number: +91-9369966830
-
-GitHub: https://github.com/sharmaHarshit2000
+Harshit Sharma\
+Email: harshitsharma9989@gmail.com\
+GitHub: https://github.com/sharmaHarshit2000\
 LinkedIn: https://www.linkedin.com/in/harshitsharma-tech
 
----
+------------------------------------------------------------------------
 
 ## Submission
 
-This project was developed and submitted as part of the Abstrabit Fullstack & AI/ML Micro-Challenge.
-
-Thank you for reviewing my submission.
+Submitted as part of Abstrabit Fullstack & GenAI Micro-Challenge.
